@@ -174,7 +174,7 @@
     <div class="tree" id="treeRoot"></div>
   </div>
 
-  <footer class="note">73 lines · 36 suppliers · dữ liệu đồng bộ từ Notion "Suppliers BSA"</footer>
+  <footer class="note" id="footerNote">dữ liệu đồng bộ từ Notion "Suppliers BSA" + nhập tay (Apex)</footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
@@ -251,6 +251,8 @@ function renderStats() {
   document.getElementById('statsRow').innerHTML = stats.map(s =>
     `<div class="stat-card"><div class="num">${s.num}</div><div class="lbl">${s.lbl}</div></div>`
   ).join('');
+  document.getElementById('footerNote').textContent =
+    `${totalLines} lines · ${totalSuppliers} suppliers · dữ liệu đồng bộ từ Notion "Suppliers BSA" + nhập tay (Apex)`;
 }
 
 // ---------- Chart ----------
