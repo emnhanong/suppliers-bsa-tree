@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Suppliers BSA — Sơ đồ cây</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    background: #f4f6f8; color: #1a2332;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 60px; }
+  header.top {
+    background: linear-gradient(135deg, #1F4E79 0%, #2d6ba3 100%);
+    color: #fff; padding: 28px 28px 24px; border-radius: 14px; margin-bottom: 20px;
+    box-shadow: 0 4px 16px rgba(31,78,121,0.25);
+  }
+  header.top h1 { margin: 0 0 6px; font-size: 22px; font-weight: 700; }
+  header.top p { margin: 0; opacity: 0.9; font-size: 13.5px; line-height: 1.5; max-width: 720px; }
+
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    margin-top: 18px;
+  }
+  .search-box {
+    flex: 1; min-width: 220px; position: relative;
+  }
+  .search-box input {
+    width: 100%; padding: 9px 14px 9px 34px; border-radius: 8px; border: none;
+    font-size: 13.5px; outline: none; background: rgba(255,255,255,0.95); color: #1a2332;
+  }
+  .search-box::before {
+    content: "⌕"; position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+    font-size: 15px; color: #64748a;
+  }
+  .toggle-group { display: flex; background: rgba(255,255,255,0.15); border-radius: 8px; padding: 3px; gap: 2px; }
+  .toggle-group button {
+    border: none; background: transparent; color: #fff; padding: 8px 14px; border-radius: 6px;
+    font-size: 13px; font-weight: 600; cursor: pointer; opacity: 0.75; transition: all .15s;
+  }
+  .toggle-group button.active { background: #fff; color: #1F4E79; opacity: 1; }
+  .exp-group { display:flex; gap:6px; }
+  .exp-group button {
+    border: 1px solid rgba(255,255,255,0.4); background: transparent; color: #fff;
+    padding: 7px 12px; border-radius: 6px; font-size: 12.5px; cursor: pointer;
+  }
+  .exp-group button:hover { background: rgba(255,255,255,0.15); }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
+  }
+  .legend .pill { font-size: 11px; opacity: 0.95; }
+
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-card {
+    background: #fff; border-radius: 12px; padding: 14px 16px; border: 1px solid #e3e8ee;
+  }
+  .stat-card .num { font-size: 24px; font-weight: 800; color: #1F4E79; line-height: 1; }
+  .stat-card .lbl { font-size: 11.5px; color: #64748a; margin-top: 4px; }
+
+  .chart-card {
+    background: #fff; border-radius: 12px; padding: 16px 18px; border: 1px solid #e3e8ee;
+    margin-bottom: 20px;
+  }
+  .chart-card h3 { margin: 0 0 10px; font-size: 14px; color: #1a2332; }
+  .chart-card .sub { font-size: 11.5px; color: #8a97a8; margin: -6px 0 12px; }
+  #strengthChart { max-height: 280px; }
+
+  .tree-card {
+    background: #fff; border-radius: 12px; border: 1px solid #e3e8ee; padding: 8px 6px 16px;
+  }
+  .tree-card h3 { margin: 10px 14px 4px; font-size: 14px; color: #1a2332; }
+  .tree-card .sub { margin: 0 14px 10px; font-size: 11.5px; color: #8a97a8; }
+
+  .tree { padding: 6px 10px 10px; }
+  .node { position: relative; }
+  .node-row {
+    display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 8px;
+    cursor: pointer; user-select: none; transition: background .12s;
+  }
+  .node-row:hover { background: #f1f5f9; }
+  .chev {
+    width: 16px; height: 16px; flex: none; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #8a97a8; transition: transform .15s;
+  }
+  .node.open > .node-row .chev { transform: rotate(90deg); }
+  .node-name { font-weight: 700; font-size: 13.5px; color: #1a2332; }
+  .node-meta { font-size: 11.5px; color: #8a97a8; margin-left: 2px; }
+  .score-dots { display: flex; gap: 2px; margin-left: auto; margin-right: 4px; }
+  .score-dots .dot { width: 6px; height: 6px; border-radius: 50%; background: #e2e8f0; }
+  .score-dots .dot.fill { background: #1F4E79; }
+  .badge-row { display: flex; gap: 5px; flex-wrap: wrap; margin-left: auto; margin-right: 6px; }
+
+  .pill {
+    display: inline-flex; align-items: center; font-size: 10.5px; font-weight: 600;
+    padding: 2.5px 8px; border-radius: 20px; white-space: nowrap;
+  }
+  .pill-airline { background: #eef2ff; color: #3730a3; }
+  .pill-dest { background: #f1f5f9; color: #334155; }
+  .pill-daily { background: #dcfce7; color: #166534; }
+  .pill-charter { background: #f3e8ff; color: #6b21a8; }
+  .pill-tons { background: #fef3c7; color: #92400e; }
+  .pill-mam, .pill-uld { background: #dbeafe; color: #1e40af; }
+  .pill-classa { background: #ccfbf1; color: #0f766e; }
+  .pill-coload { background: #f1f5f9; color: #475569; }
+  .pill-transit { background: #ffedd5; color: #9a3412; }
+  .pill-count { background: #1F4E79; color: #fff; }
+
+  .children { margin-left: 22px; padding-left: 14px; border-left: 2px solid #e5eaf0; display: none; }
+  .node.open > .children { display: block; }
+
+  .leaf {
+    padding: 10px 10px 10px 4px; border-bottom: 1px dashed #edf1f5;
+  }
+  .leaf:last-child { border-bottom: none; }
+  .leaf-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .leaf-dests { display: flex; gap: 5px; flex-wrap: wrap; }
+  .leaf-note { font-size: 12px; color: #52607a; margin-top: 5px; line-height: 1.45; }
+  .leaf-routing { font-size: 11px; color: #94a3b8; margin-top: 3px; font-style: italic; }
+  .leaf-link {
+    margin-left: auto; font-size: 11.5px; color: #1F4E79; text-decoration: none; font-weight: 600;
+    white-space: nowrap; flex: none;
+  }
+  .leaf-link:hover { text-decoration: underline; }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: #94a3b8; font-size: 13px; }
+
+  footer.note { text-align: center; color: #94a3b8; font-size: 11px; margin-top: 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>🌳 Suppliers BSA — Sơ đồ cây theo Supplier &amp; Line</h1>
+    <p>Nhìn nhanh supplier nào mạnh về hãng bay / tuyến nào. Mỗi dòng (line) liên kết thẳng về đúng trang Notion gốc. Dữ liệu lấy từ bảng "Suppliers BSA".</p>
+    <div class="controls">
+      <div class="search-box">
+        <input id="searchInput" type="text" placeholder="Tìm supplier, hãng bay (VD: CV, CZ) hoặc điểm đến (VD: ORD, LAX)...">
+      </div>
+      <div class="toggle-group">
+        <button id="modeSupplier" class="active">Theo Supplier</button>
+        <button id="modeAirline">Theo Hãng bay</button>
+      </div>
+      <div class="exp-group">
+        <button id="expandAll">Mở hết ⌄</button>
+        <button id="collapseAll">Thu hết ⌃</button>
+      </div>
+    </div>
+    <div class="legend">
+      <span class="pill pill-daily">Daily</span>
+      <span class="pill pill-charter">Charter</span>
+      <span class="pill pill-tons">Tải (tons)</span>
+      <span class="pill pill-mam">Mâm / ULD</span>
+      <span class="pill pill-classa">Class A</span>
+      <span class="pill pill-transit">Có nối chuyến</span>
+      <span class="pill pill-coload">Coload</span>
+    </div>
+  </header>
+
+  <div class="stats-row" id="statsRow"></div>
+
+  <div class="chart-card">
+    <h3>Top 10 supplier mạnh nhất (theo điểm sức mạnh)</h3>
+    <div class="sub">Điểm = số line đang chạy + số tín hiệu "mạnh" (daily / charter / tải tons / mâm)</div>
+    <canvas id="strengthChart"></canvas>
+  </div>
+
+  <div class="tree-card">
+    <h3 id="treeTitle">Cây Supplier → Hãng bay → Điểm đến</h3>
+    <div class="sub" id="treeSub">Bấm vào từng supplier để xem chi tiết từng line. Bấm "Xem trên Notion" để mở đúng trang gốc.</div>
+    <div class="tree" id="treeRoot"></div>
+  </div>
+
+  <footer class="note">73 lines · 36 suppliers · dữ liệu đồng bộ từ Notion "Suppliers BSA"</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<script>
+const DATA = [{"supplier": "Viva", "lines": [{"airline": "CV", "dests": ["EU"], "etd_eta": "D4,6,7", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba7804ebadeea8c14d6921b", "signals": []}, {"airline": "CV", "dests": ["ORD"], "etd_eta": "D4,7", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba7805f8bd6ece6d6596425", "signals": []}, {"airline": "CV", "dests": ["LAX"], "etd_eta": "D4", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780fcb641dd2af1114351", "signals": []}, {"airline": "CV", "dests": ["DFW"], "etd_eta": "D4", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780f1b96cdddf2fd20787", "signals": []}, {"airline": "CV", "dests": ["JFK"], "etd_eta": "D7", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780e08914f24bd6c223cb", "signals": []}, {"airline": "CI", "dests": ["LAX"], "etd_eta": "D1,3,7", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780229484eef1e98d3805", "signals": []}, {"airline": "CI", "dests": ["ORD"], "etd_eta": "D4,6", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780f2a067d2cd9f729fa0", "signals": []}, {"airline": "5Y", "dests": ["ORD"], "etd_eta": "D1,4,7", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780d581f6d4d7951bbfe7", "signals": []}, {"airline": "SQ", "dests": ["LHR"], "etd_eta": "D2,3,4,5", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba78011883ac0b33bbc39f3", "signals": []}, {"airline": "SQ", "dests": ["FRA"], "etd_eta": "D6", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780759322e34b3234d7ea", "signals": []}, {"airline": "SQ", "dests": ["SYD"], "etd_eta": "D4,6", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780f0a1c8f7c612b8725c", "signals": []}, {"airline": "SQ", "dests": ["SFO"], "etd_eta": "D6", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba78049b031c31fabf9e651", "signals": []}, {"airline": "SQ", "dests": ["LAX"], "etd_eta": "D1", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba7808b951ae0abb9305376", "signals": []}], "dests": ["DFW", "EU", "FRA", "JFK", "LAX", "LHR", "ORD", "SFO", "SYD"], "airlines": ["5Y", "CI", "CV", "SQ"], "strength_score": 13}, {"supplier": "TPL", "lines": [{"airline": "SQ", "dests": ["SIN"], "etd_eta": "flexible ETD", "note": "7LD", "routing": "Han-Sin", "url": "https://www.notion.so/3d6744198ba7803ba3d7ce6a4273bc8a", "signals": [{"type": "uld", "label": "7 LD"}]}, {"airline": "CV", "dests": ["ORD"], "etd_eta": "D6,7 nối D1", "note": "1 mâm Q7", "routing": "", "url": "https://www.notion.so/3d6744198ba780ce8e30d31742be1f98", "signals": [{"type": "mam", "label": "1 mâm"}, {"type": "transit", "label": "Có nối chuyến"}]}, {"airline": "SQ", "dests": ["LAX"], "etd_eta": "D6 hoặc 7 nối D1", "note": "2 mâm LD", "routing": "Han-Sin-Lax", "url": "https://www.notion.so/3d6744198ba780bd8a31dcfa496dc122", "signals": [{"type": "mam", "label": "2 mâm"}, {"type": "transit", "label": "Có nối chuyến"}]}, {"airline": "CV", "dests": ["EU"], "etd_eta": "D4,6,7", "note": "2 tons", "routing": "Han-Lux- DES", "url": "https://www.notion.so/3d6744198ba7809c9ecbc0d3a2ebd996", "signals": [{"type": "tons", "label": "2 tons"}]}, {"airline": "SQ", "dests": ["JFK"], "etd_eta": "D4 nối D5", "note": "2 Mâm LD", "routing": "Han-Sin-JFK", "url": "https://www.notion.so/3d6744198ba78025beade46fa5b7df4e", "signals": [{"type": "mam", "label": "2 mâm"}, {"type": "transit", "label": "Có nối chuyến"}]}, {"airline": "SQ", "dests": ["SYD"], "etd_eta": "D2 nối D3", "note": "1LD", "routing": "Han-Sin-SYD", "url": "https://www.notion.so/3d6744198ba780d88e2dce1ea69fdbd9", "signals": [{"type": "uld", "label": "1 LD"}, {"type": "transit", "label": "Có nối chuyến"}]}], "dests": ["EU", "JFK", "LAX", "ORD", "SIN", "SYD"], "airlines": ["CV", "SQ"], "strength_score": 10}, {"supplier": "ALS", "lines": [{"airline": "KE", "dests": ["ORD"], "etd_eta": "D1 nối D1", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba7804fb75feff5537b66f4", "signals": [{"type": "transit", "label": "Có nối chuyến"}]}, {"airline": "TK", "dests": ["ORD", "LAX"], "etd_eta": "Là class A của TK", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780b0823ce07a559f1cd1", "signals": [{"type": "classa", "label": "Class A"}]}, {"airline": "CZ", "dests": ["ORD", "LAX"], "etd_eta": "daily (transit time 3-4 days)", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba7802796a3ec2a38a5ab36", "signals": [{"type": "daily", "label": "Daily"}]}, {"airline": "CZ", "dests": ["YYZ"], "etd_eta": "D2,4,6,7 (transit time 3-4 days)", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780dcb7c5de6c79957745", "signals": []}, {"airline": "CZ", "dests": ["FRA"], "etd_eta": "D1,3,4,5,6,7 (transit time 3-4 days)", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780878da1c60bfaba338c", "signals": []}, {"airline": "CZ", "dests": ["AMS"], "etd_eta": "daily (Transit time 3-4 days)", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba78029a0a4efe3d7d1303f", "signals": [{"type": "daily", "label": "Daily"}]}], "dests": ["AMS", "FRA", "LAX", "ORD", "YYZ"], "airlines": ["CZ", "KE", "TK"], "strength_score": 8}, {"supplier": "Bondex", "lines": [{"airline": "KJ", "dests": ["icn"], "etd_eta": "daily", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba7807c9de0f48fccf57f81", "signals": [{"type": "daily", "label": "Daily"}]}, {"airline": "CK", "dests": ["ORD", "LAX"], "etd_eta": "daily trừ D1,2", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba78076b1aaf6d8fac1275f", "signals": [{"type": "daily", "label": "Daily"}]}, {"airline": "CZ", "dests": ["LAX", "YYZ", "NLU"], "etd_eta": "D3,5", "note": "", "routing": "Han-PVG- DES", "url": "https://www.notion.so/3d6744198ba780e196cdd69a81dc0e18", "signals": []}, {"airline": "CZ", "dests": ["LAX", "JFK"], "etd_eta": "D4,5 7", "note": "", "routing": "Han-CAN-DES", "url": "https://www.notion.so/3d6744198ba780318b2eff75d5080766", "signals": []}], "dests": ["JFK", "LAX", "NLU", "ORD", "YYZ", "icn"], "airlines": ["CK", "CZ", "KJ"], "strength_score": 6}, {"supplier": "Dim", "lines": [{"airline": "BR", "dests": ["DFW"], "etd_eta": "daily", "note": "tải không nhiêu", "routing": "", "url": "https://www.notion.so/3d6744198ba780e0a117d7c857720491", "signals": [{"type": "daily", "label": "Daily"}]}, {"airline": "BR", "dests": ["ORD"], "etd_eta": "daily (nối tùy thuộc ngày nối)", "note": "giá ord mua thường cao hơn ở mùa thấp điểm 6 tháng đầu năm", "routing": "", "url": "https://www.notion.so/3d6744198ba78041a3f4ee1dd001c393", "signals": [{"type": "daily", "label": "Daily"}, {"type": "transit", "label": "Có nối chuyến"}]}, {"airline": "BR", "dests": ["LAX"], "etd_eta": "daily (nối tùy thuộc ngày nối)", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba7800188fbf3ae5f2988c5", "signals": [{"type": "daily", "label": "Daily"}, {"type": "transit", "label": "Có nối chuyến"}]}], "dests": ["DFW", "LAX", "ORD"], "airlines": ["BR"], "strength_score": 6}, {"supplier": "Skyplanet", "lines": [{"airline": "CI", "dests": ["LAX"], "etd_eta": "D1 nối D2, D3 nối D4", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba7808e9cb3ed399d67e964", "signals": [{"type": "transit", "label": "Có nối chuyến"}]}, {"airline": "CV", "dests": ["ORD"], "etd_eta": "D4 nối D5, D6,7 nối D1", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780008039edffe4a5fa48", "signals": [{"type": "transit", "label": "Có nối chuyến"}]}, {"airline": "CV", "dests": ["EU"], "etd_eta": "", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780f493ceca8157051b9c", "signals": []}, {"airline": "5Y", "dests": ["ORD"], "etd_eta": "D7, tải charter", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba78042a2c8d4e7af4a911e", "signals": [{"type": "charter", "label": "Charter"}]}, {"airline": "CV", "dests": ["DFW"], "etd_eta": "D4,6 nối D6", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba781949cf3ede677e494ba", "signals": [{"type": "transit", "label": "Có nối chuyến"}]}], "dests": ["DFW", "EU", "LAX", "ORD"], "airlines": ["5Y", "CI", "CV"], "strength_score": 6}, {"supplier": "THI", "lines": [{"airline": "BR", "dests": ["LAX"], "etd_eta": "daily", "note": "30 tons ⇒ Thường dùng cho hàng nominate của nhà còn thừa mới bán ngoài", "routing": "", "url": "https://www.notion.so/3d6744198ba7801a8e4eefb0f7c13107", "signals": [{"type": "daily", "label": "Daily"}, {"type": "tons", "label": "30 tons"}]}, {"airline": "JD", "dests": ["ORD"], "etd_eta": "D6", "note": "", "routing": "Han-CGO-ORD", "url": "https://www.notion.so/3d6744198ba780bc92f8f9ac5e37119e", "signals": []}, {"airline": "2C", "dests": ["ORD"], "etd_eta": "tải charter lấy được bên BSI", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780749111caa489342ba9", "signals": [{"type": "charter", "label": "Charter"}]}], "dests": ["LAX", "ORD"], "airlines": ["2C", "BR", "JD"], "strength_score": 6}, {"supplier": "US Com", "lines": [{"airline": "KE", "dests": ["ORD"], "etd_eta": "daily (tải đi 3-4 days)", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780cca22de911e2788872", "signals": [{"type": "daily", "label": "Daily"}]}, {"airline": "KE", "dests": ["DFW"], "etd_eta": "daily (tải đi 3-4 days)", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba78075af48eeaefca92880", "signals": [{"type": "daily", "label": "Daily"}]}], "dests": ["DFW", "ORD"], "airlines": ["KE"], "strength_score": 4}, {"supplier": "BSI", "lines": [{"airline": "2C", "dests": ["ORD"], "etd_eta": "tải charter", "note": "50 tons", "routing": "", "url": "https://www.notion.so/3d6744198ba780acb3c1cb4c450490eb", "signals": [{"type": "charter", "label": "Charter"}, {"type": "tons", "label": "50 tons"}]}], "dests": ["ORD"], "airlines": ["2C"], "strength_score": 3}, {"supplier": "Ecargo", "lines": [{"airline": "KE", "dests": ["LAX"], "etd_eta": "daily(tải đi 2-3 days)", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780f8a8a0fffc6e6ed5ba", "signals": [{"type": "daily", "label": "Daily"}]}, {"airline": "KE", "dests": ["ORD"], "etd_eta": "D1,4,6 ( tải nối 3-4 days)", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780f0aab9c778b48e1a22", "signals": [{"type": "transit", "label": "Có nối chuyến"}]}], "dests": ["LAX", "ORD"], "airlines": ["KE"], "strength_score": 3}, {"supplier": "Yiyu", "lines": [{"airline": "CK", "dests": ["ORD", "LAX"], "etd_eta": "daily trừ D1,2", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba7806dbed2e4247963cf22", "signals": [{"type": "daily", "label": "Daily"}]}, {"airline": "CZ", "dests": ["ORD", "LAX"], "etd_eta": "", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba78005b8b4c1cc5699c622", "signals": []}], "dests": ["LAX", "ORD"], "airlines": ["CK", "CZ"], "strength_score": 3}, {"supplier": "Air global", "lines": [{"airline": "CV", "dests": ["ORD", "LAX", "DFW", "JFK"], "etd_eta": "", "note": "5 mâm", "routing": "", "url": "https://www.notion.so/3d6744198ba78023bbc1fac0bc9bf4ac", "signals": [{"type": "mam", "label": "5 mâm"}]}], "dests": ["DFW", "JFK", "LAX", "ORD"], "airlines": ["CV"], "strength_score": 2}, {"supplier": "Ceva", "lines": [{"airline": "2C", "dests": ["ORD"], "etd_eta": "tải charter D4,6,7", "note": "check giá trực tiếp nhưng lúc book cần book qua vendor", "routing": "", "url": "https://www.notion.so/3d6744198ba780b8a2cdcf3f99bd9985", "signals": [{"type": "charter", "label": "Charter"}]}], "dests": ["ORD"], "airlines": ["2C"], "strength_score": 2}, {"supplier": "ES", "lines": [{"airline": "BR", "dests": ["ORD", "LAX", "JFK"], "etd_eta": "daily (nối tùy thuộc ngày nối)", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba78025baa6d36e892ffa9d", "signals": [{"type": "daily", "label": "Daily"}, {"type": "transit", "label": "Có nối chuyến"}]}], "dests": ["JFK", "LAX", "ORD"], "airlines": ["BR"], "strength_score": 2}, {"supplier": "Hanjin", "lines": [{"airline": "KE", "dests": ["LAX", "JFK"], "etd_eta": "daily (transit time 2-3 days)", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba78069a01bfb7d8b509299", "signals": [{"type": "daily", "label": "Daily"}]}], "dests": ["JFK", "LAX"], "airlines": ["KE"], "strength_score": 2}, {"supplier": "Joy speed", "lines": [{"airline": "2C", "dests": ["ORD"], "etd_eta": "tải charter", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780efb660dc2a58ff0de4", "signals": [{"type": "charter", "label": "Charter"}]}], "dests": ["ORD"], "airlines": ["2C"], "strength_score": 2}, {"supplier": "Mass", "lines": [{"airline": "CK, CZ", "dests": ["LAX"], "etd_eta": "", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780618077e9b0e2466d19", "signals": []}, {"airline": "CI", "dests": ["ORD"], "etd_eta": "D4,6 (tải nối 1-2 days)", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba78054af57d160668c1788", "signals": [{"type": "transit", "label": "Có nối chuyến"}]}], "dests": ["LAX", "ORD"], "airlines": ["CI", "CK, CZ"], "strength_score": 2}, {"supplier": "QY", "lines": [{"airline": "5Y/GG", "dests": ["ORD"], "etd_eta": "D4,6,7 tải charter ⇒ Mua lại của Apex tới hết năm 2026", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780bfa758eb4404d53aee", "signals": [{"type": "charter", "label": "Charter"}]}], "dests": ["ORD"], "airlines": ["5Y/GG"], "strength_score": 2}, {"supplier": "ACP", "lines": [{"airline": "CX", "dests": ["ORD"], "etd_eta": "", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780048401c8fe9583b4e1", "signals": []}], "dests": ["ORD"], "airlines": ["CX"], "strength_score": 1}, {"supplier": "AGX", "lines": [{"airline": "CZ, CK", "dests": ["ORD", "LAX"], "etd_eta": "", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba7803aac6dc97ae37ecd62", "signals": []}], "dests": ["LAX", "ORD"], "airlines": ["CZ, CK"], "strength_score": 1}, {"supplier": "Allink", "lines": [{"airline": "CK, CZ", "dests": ["ORD", "LAX"], "etd_eta": "", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba78047b6b0ebb1ec040b7f", "signals": []}], "dests": ["LAX", "ORD"], "airlines": ["CK, CZ"], "strength_score": 1}, {"supplier": "Dol global", "lines": [{"airline": "CV", "dests": ["ORD"], "etd_eta": "", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba7803899f3e8fe690a81c7", "signals": []}], "dests": ["ORD"], "airlines": ["CV"], "strength_score": 1}, {"supplier": "FE", "lines": [{"airline": "CV", "dests": ["LAX", "DFW", "ORD", "JFK"], "etd_eta": "", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780d0a617dd656af9086b", "signals": []}], "dests": ["DFW", "JFK", "LAX", "ORD"], "airlines": ["CV"], "strength_score": 1}, {"supplier": "GW", "lines": [{"airline": "CV", "dests": ["ORD"], "etd_eta": "", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba7802eae4fe854f1392926", "signals": []}], "dests": ["ORD"], "airlines": ["CV"], "strength_score": 1}, {"supplier": "Hellman", "lines": [{"airline": "CV", "dests": ["ORD"], "etd_eta": "", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba78077ac1efd2ce12c3ebd", "signals": []}], "dests": ["ORD"], "airlines": ["CV"], "strength_score": 1}, {"supplier": "Joosung", "lines": [{"airline": "KE", "dests": ["ORD"], "etd_eta": "D1", "note": "tải coload", "routing": "", "url": "https://www.notion.so/3d6744198ba78055971bf07c8d89f2e4", "signals": [{"type": "coload", "label": "Coload"}]}], "dests": ["ORD"], "airlines": ["KE"], "strength_score": 1}, {"supplier": "Master Cargo", "lines": [{"airline": "BR", "dests": ["LAX", "JFK", "DFW", "SEA"], "etd_eta": "", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba78022863ed6bd0bea9c5a", "signals": []}], "dests": ["DFW", "JFK", "LAX", "SEA"], "airlines": ["BR"], "strength_score": 1}, {"supplier": "nextrek", "lines": [{"airline": "CZ", "dests": ["LAX"], "etd_eta": "", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba7807b9bdafe995c89ef59", "signals": []}], "dests": ["LAX"], "airlines": ["CZ"], "strength_score": 1}, {"supplier": "Omni", "lines": [{"airline": "CV", "dests": ["DFW"], "etd_eta": "D6 nối D6", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780a2a730cda53f65d24c", "signals": [{"type": "transit", "label": "Có nối chuyến"}]}], "dests": ["DFW"], "airlines": ["CV"], "strength_score": 1}, {"supplier": "Panda", "lines": [{"airline": "CV", "dests": ["ORD", "LAX"], "etd_eta": "", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780608d70e098f91b832d", "signals": []}], "dests": ["LAX", "ORD"], "airlines": ["CV"], "strength_score": 1}, {"supplier": "Pantos", "lines": [{"airline": "CK", "dests": ["ORD", "LAX"], "etd_eta": "", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba78007bfddf3736f78e974", "signals": []}], "dests": ["LAX", "ORD"], "airlines": ["CK"], "strength_score": 1}, {"supplier": "Phoenix", "lines": [{"airline": "CV", "dests": ["ORD", "LAX"], "etd_eta": "", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba7808fa8a5ea63d38eea48", "signals": []}], "dests": ["LAX", "ORD"], "airlines": ["CV"], "strength_score": 1}, {"supplier": "SK", "lines": [{"airline": "KJ", "dests": ["icn"], "etd_eta": "", "note": "Người phụ trách: Thắm", "routing": "", "url": "https://www.notion.so/3de744198ba78142bf97c0ef75fb90da", "signals": []}], "dests": ["icn"], "airlines": ["KJ"], "strength_score": 1}, {"supplier": "Smarthub", "lines": [{"airline": "CI, KE", "dests": ["ORD", "LAX"], "etd_eta": "", "note": "", "routing": "", "url": "https://www.notion.so/3d6744198ba780818cd3dbe279aeefbf", "signals": []}], "dests": ["LAX", "ORD"], "airlines": ["CI, KE"], "strength_score": 1}, {"supplier": "VAS", "lines": [{"airline": "KE, CV", "dests": ["ORD"], "etd_eta": "", "note": "tải coload", "routing": "", "url": "https://www.notion.so/3d6744198ba780739462e5e359a43d2d", "signals": [{"type": "coload", "label": "Coload"}]}], "dests": ["ORD"], "airlines": ["KE, CV"], "strength_score": 1}, {"supplier": "WAC", "lines": [{"airline": "KJ", "dests": ["icn"], "etd_eta": "", "note": "Người phụ trách: Thảo", "routing": "", "url": "https://www.notion.so/3de744198ba7810283f7caaa0ffd63b2", "signals": []}], "dests": ["icn"], "airlines": ["KJ"], "strength_score": 1}];
+
+function pillClass(type) {
+  return 'pill pill-' + type;
+}
+
+function renderSignalPills(signals) {
+  return signals.map(s => `<span class="${pillClass(s.type)}">${s.label}</span>`).join('');
+}
+
+function scoreDots(score, max) {
+  const n = 5;
+  const filled = Math.max(1, Math.round((score / max) * n));
+  let html = '';
+  for (let i = 0; i < n; i++) html += `<span class="dot ${i < filled ? 'fill' : ''}"></span>`;
+  return html;
+}
+
+const maxScore = Math.max(...DATA.map(d => d.strength_score));
+
+// ---------- Build "by airline" grouping client-side ----------
+function buildByAirline() {
+  const map = {};
+  DATA.forEach(sup => {
+    sup.lines.forEach(line => {
+      const key = line.airline;
+      if (!map[key]) map[key] = { supplier: key, lines: [], dests: new Set(), airlines: new Set([key]) };
+      map[key].lines.push({
+        airline: sup.supplier,            // reuse field name for leaf rendering (shows supplier as "airline" slot)
+        dests: line.dests,
+        etd_eta: line.etd_eta,
+        note: line.note,
+        routing: line.routing,
+        url: line.url,
+        signals: line.signals,
+        _supplierScore: sup.strength_score,
+      });
+      line.dests.forEach(d => map[key].dests.add(d));
+    });
+  });
+  const arr = Object.values(map).map(g => {
+    const score = g.lines.length + g.lines.reduce((acc, l) => acc + l.signals.filter(s => ['daily','charter','tons','mam'].includes(s.type)).length, 0);
+    g.lines.sort((a, b) => b._supplierScore - a._supplierScore);
+    return { supplier: g.supplier, lines: g.lines, dests: Array.from(g.dests).sort(), airlines: Array.from(g.airlines), strength_score: score };
+  });
+  arr.sort((a, b) => b.strength_score - a.strength_score || a.supplier.localeCompare(b.supplier));
+  return arr;
+}
+const DATA_BY_AIRLINE = buildByAirline();
+const maxScoreAirline = Math.max(...DATA_BY_AIRLINE.map(d => d.strength_score));
+
+let currentMode = 'supplier'; // 'supplier' | 'airline'
+
+function currentData() { return currentMode === 'supplier' ? DATA : DATA_BY_AIRLINE; }
+function currentMax() { return currentMode === 'supplier' ? maxScore : maxScoreAirline; }
+
+// ---------- Stats ----------
+function renderStats() {
+  const totalSuppliers = DATA.length;
+  const totalLines = DATA.reduce((a, s) => a + s.lines.length, 0);
+  const allAirlines = new Set();
+  const allDests = new Set();
+  DATA.forEach(s => { s.airlines.forEach(a => allAirlines.add(a)); s.dests.forEach(d => allDests.add(d)); });
+  const stats = [
+    { num: totalSuppliers, lbl: 'Supplier' },
+    { num: totalLines, lbl: 'Lines (tuyến đang chạy)' },
+    { num: allAirlines.size, lbl: 'Hãng bay khác nhau' },
+    { num: allDests.size, lbl: 'Điểm đến khác nhau' },
+  ];
+  document.getElementById('statsRow').innerHTML = stats.map(s =>
+    `<div class="stat-card"><div class="num">${s.num}</div><div class="lbl">${s.lbl}</div></div>`
+  ).join('');
+}
+
+// ---------- Chart ----------
+let chartInstance = null;
+function renderChart() {
+  const top = [...currentData()].sort((a,b) => b.strength_score - a.strength_score).slice(0, 10);
+  const ctx = document.getElementById('strengthChart').getContext('2d');
+  if (chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: top.map(s => s.supplier),
+      datasets: [{
+        label: 'Điểm sức mạnh',
+        data: top.map(s => s.strength_score),
+        backgroundColor: '#2d6ba3',
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ---------- Tree rendering ----------
+function matchesSearch(sup, q) {
+  if (!q) return true;
+  q = q.toLowerCase();
+  if (sup.supplier.toLowerCase().includes(q)) return true;
+  if (sup.airlines.some(a => a.toLowerCase().includes(q))) return true;
+  if (sup.dests.some(d => d.toLowerCase().includes(q))) return true;
+  return sup.lines.some(l =>
+    l.airline.toLowerCase().includes(q) ||
+    l.dests.some(d => d.toLowerCase().includes(q)) ||
+    (l.note || '').toLowerCase().includes(q) ||
+    (l.etd_eta || '').toLowerCase().includes(q)
+  );
+}
+
+function renderLeaf(line, mode) {
+  const label = mode === 'supplier' ? line.airline : line.airline; // same field reused
+  const destPills = line.dests.map(d => `<span class="pill pill-dest">${d}</span>`).join('');
+  const sigPills = renderSignalPills(line.signals);
+  const noteHtml = line.note ? `<div class="leaf-note">📝 ${escapeHtml(line.note)}</div>` : '';
+  const routingHtml = line.routing ? `<div class="leaf-routing">Routing: ${escapeHtml(line.routing)}</div>` : '';
+  const etdHtml = line.etd_eta ? `<div class="leaf-note">🕐 ${escapeHtml(line.etd_eta)}</div>` : '';
+  return `
+    <div class="leaf">
+      <div class="leaf-top">
+        <span class="pill pill-airline">${escapeHtml(label)}</span>
+        <div class="leaf-dests">${destPills}</div>
+        ${sigPills}
+        <a class="leaf-link" href="${line.url}" target="_blank" rel="noopener">Xem trên Notion ↗</a>
+      </div>
+      ${etdHtml}
+      ${noteHtml}
+      ${routingHtml}
+    </div>
+  `;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderNode(sup, mode, max) {
+  const airlinePills = sup.airlines.slice(0, 6).map(a => `<span class="pill pill-airline">${escapeHtml(a)}</span>`).join('');
+  const destCount = sup.dests.length;
+  const childHtml = sup.lines.map(l => renderLeaf(l, mode)).join('');
+  const parentLabel = mode === 'supplier' ? 'tuyến' : 'supplier';
+  return `
+    <div class="node">
+      <div class="node-row" onclick="this.parentElement.classList.toggle('open')">
+        <span class="chev">▶</span>
+        <span class="node-name">${escapeHtml(sup.supplier)}</span>
+        <span class="node-meta">${sup.lines.length} ${parentLabel} · ${destCount} điểm đến</span>
+        <div class="badge-row">${airlinePills}</div>
+        <span class="pill pill-count">${sup.strength_score} pts</span>
+        <div class="score-dots">${scoreDots(sup.strength_score, max)}</div>
+      </div>
+      <div class="children">${childHtml}</div>
+    </div>
+  `;
+}
+
+function render() {
+  const q = document.getElementById('searchInput').value.trim();
+  const data = currentData();
+  const max = currentMax();
+  const filtered = data.filter(sup => matchesSearch(sup, q));
+  const root = document.getElementById('treeRoot');
+  if (filtered.length === 0) {
+    root.innerHTML = `<div class="empty-state">Không tìm thấy kết quả cho "${escapeHtml(q)}"</div>`;
+  } else {
+    root.innerHTML = filtered.map(sup => renderNode(sup, currentMode, max)).join('');
+  }
+  document.getElementById('treeTitle').textContent = currentMode === 'supplier'
+    ? 'Cây Supplier → Hãng bay → Điểm đến'
+    : 'Cây Hãng bay → Supplier mạnh nhất → Điểm đến';
+  document.getElementById('treeSub').textContent = currentMode === 'supplier'
+    ? 'Bấm vào từng supplier để xem chi tiết từng line. Bấm "Xem trên Notion" để mở đúng trang gốc.'
+    : 'Mỗi hãng bay liệt kê các supplier đang chạy, sắp xếp từ mạnh nhất xuống (theo điểm sức mạnh supplier đó).';
+}
+
+document.getElementById('searchInput').addEventListener('input', render);
+document.getElementById('modeSupplier').addEventListener('click', () => {
+  currentMode = 'supplier';
+  document.getElementById('modeSupplier').classList.add('active');
+  document.getElementById('modeAirline').classList.remove('active');
+  renderChart();
+  render();
+});
+document.getElementById('modeAirline').addEventListener('click', () => {
+  currentMode = 'airline';
+  document.getElementById('modeAirline').classList.add('active');
+  document.getElementById('modeSupplier').classList.remove('active');
+  renderChart();
+  render();
+});
+document.getElementById('expandAll').addEventListener('click', () => {
+  document.querySelectorAll('.node').forEach(n => n.classList.add('open'));
+});
+document.getElementById('collapseAll').addEventListener('click', () => {
+  document.querySelectorAll('.node').forEach(n => n.classList.remove('open'));
+});
+
+renderStats();
+renderChart();
+render();
+</script>
+</body>
+</html>
