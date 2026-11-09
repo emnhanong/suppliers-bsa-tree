@@ -125,6 +125,28 @@
   }
   .leaf-link:hover { text-decoration: underline; }
 
+  .schedule-list {
+    margin-top: 7px; display: flex; flex-direction: column; gap: 5px;
+    background: #fafbfc; border: 1px solid #eef1f4; border-radius: 8px; padding: 8px 10px;
+  }
+  .schedule-day {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 2px 0;
+  }
+  .schedule-day + .schedule-day { border-top: 1px dashed #edf1f5; padding-top: 6px; }
+  .schedule-day-label {
+    flex: none; min-width: 30px; text-align: center; font-weight: 700; font-size: 10.5px;
+    color: #1F4E79; background: #e7edf5; border-radius: 5px; padding: 2px 6px; line-height: 1.6;
+  }
+  .schedule-flights { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .schedule-flight {
+    font-size: 11.5px; color: #44536b; line-height: 1.5; font-family: 'SFMono-Regular', Consolas, monospace;
+  }
+  .schedule-summary {
+    margin-top: 8px; padding: 8px 10px; background: #eef6ff; border-left: 3px solid #1F4E79;
+    border-radius: 4px; font-size: 11.5px; color: #1F4E79; font-weight: 600; line-height: 1.5;
+  }
+
   .empty-state { text-align: center; padding: 40px 20px; color: #94a3b8; font-size: 13px; }
 
   footer.note { text-align: center; color: #94a3b8; font-size: 11px; margin-top: 18px; }
@@ -300,11 +322,49 @@ function matchesSearch(sup, q) {
   );
 }
 
+const DAY_TITLES = {
+  'T2': 'Thứ 2 (Mon)', 'T3': 'Thứ 3 (Tue)', 'T4': 'Thứ 4 (Wed)', 'T5': 'Thứ 5 (Thu)',
+  'T6': 'Thứ 6 (Fri)', 'T7': 'Thứ 7 (Sat)', 'CN': 'Chủ Nhật (Sun)',
+};
+
+function renderNoteBlock(note) {
+  if (!note) return '';
+  let main = note, summary = '';
+  const arrowIdx = note.indexOf('⇒');
+  if (arrowIdx !== -1) {
+    main = note.slice(0, arrowIdx).trim();
+    summary = note.slice(arrowIdx + 1).trim();
+  }
+  const dayPattern = /^(T[2-7]|CN)\s*:\s*(.*)$/;
+  const segments = main.split(';').map(s => s.trim()).filter(Boolean);
+  const isSchedule = segments.length >= 2 && segments.every(s => dayPattern.test(s));
+  let html = '';
+  if (isSchedule) {
+    html += '<div class="schedule-list">';
+    segments.forEach(seg => {
+      const m = seg.match(dayPattern);
+      const day = m[1], rest = m[2];
+      const flights = rest.split('&').map(f => f.trim()).filter(Boolean);
+      html += `<div class="schedule-day">`
+        + `<span class="schedule-day-label" title="${DAY_TITLES[day] || day}">${day}</span>`
+        + `<div class="schedule-flights">${flights.map(f => `<div class="schedule-flight">${escapeHtml(f)}</div>`).join('')}</div>`
+        + `</div>`;
+    });
+    html += '</div>';
+  } else if (main) {
+    html += `<div class="leaf-note">📝 ${escapeHtml(main)}</div>`;
+  }
+  if (summary) {
+    html += `<div class="schedule-summary">⇒ ${escapeHtml(summary)}</div>`;
+  }
+  return html;
+}
+
 function renderLeaf(line, mode) {
   const label = mode === 'supplier' ? line.airline : line.airline; // same field reused
   const destPills = line.dests.map(d => `<span class="pill pill-dest">${d}</span>`).join('');
   const sigPills = renderSignalPills(line.signals);
-  const noteHtml = line.note ? `<div class="leaf-note">📝 ${escapeHtml(line.note)}</div>` : '';
+  const noteHtml = renderNoteBlock(line.note);
   const routingHtml = line.routing ? `<div class="leaf-routing">Routing: ${escapeHtml(line.routing)}</div>` : '';
   const etdHtml = line.etd_eta ? `<div class="leaf-note">🕐 ${escapeHtml(line.etd_eta)}</div>` : '';
   return `
